@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EnigmaForge</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=IBM+Plex+Mono:wght@500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1419;--panel:#17202a;--inset:#111a22;--line:#263341;--text:#e8eef3;--muted:#8a9aa8;--brass:#e3b04b;--ok:#4fb99f;--bad:#f0a8a8}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Work Sans',system-ui,sans-serif;font-size:16px;line-height:1.5}
+button,input{font:inherit}
+:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:20px 40px;border-bottom:1px solid var(--line)}
+.brand{font-family:'Fraunces',Georgia,serif;font-weight:700;font-size:22px}
+.sub{font-size:14px;color:var(--muted)}
+main{max-width:1120px;margin:0 auto;padding:32px 40px}
+h1,h2{font-family:'Fraunces',Georgia,serif;margin:0}
+h1{font-size:44px;line-height:1.1;margin-bottom:12px}
+h2{font-size:34px}
+.lead{margin:0 0 32px;font-size:17px;color:var(--muted);max-width:560px}
+.group{margin-bottom:28px}
+.lbl{display:block;font-size:14px;color:var(--muted);margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;max-width:880px}
+.opt{display:flex;flex-direction:column;gap:6px;text-align:left;padding:16px;background:var(--inset);border:1px solid var(--line);border-radius:10px;color:var(--text);cursor:pointer;min-height:44px}
+.opt.on{border:2px solid var(--brass);background:#1d2630;padding:15px}
+input[type=text]{width:100%;max-width:420px;min-height:44px;padding:0 14px;background:var(--inset);border:1px solid var(--line);border-radius:10px;color:var(--text);font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:16px}
+.go{background:var(--brass);color:#0f1419;border:0;border-radius:10px;padding:12px 28px;font-size:16px;font-weight:600;cursor:pointer;min-height:44px}
+.alt{background:transparent;color:var(--text);border:1px solid var(--muted);border-radius:10px;padding:12px 22px;cursor:pointer;min-height:44px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{display:inline-block;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:14px;background:var(--panel)}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+#notice{margin:0 0 20px;padding:12px 14px;border:1px solid var(--bad);border-radius:10px;color:var(--bad)}
+.layout{display:flex;flex-wrap:wrap;gap:32px}
+.side{flex:1 1 320px;display:flex;flex-direction:column;gap:10px}
+.side-head{display:flex;justify-content:space-between;align-items:baseline}
+.track{height:8px;background:var(--line);border-radius:4px}
+#bar{height:8px;width:0;background:var(--ok);border-radius:4px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:12px 14px;background:var(--inset);border:1px solid var(--line);border-radius:10px;color:var(--text);text-align:left;cursor:pointer;min-height:44px}
+.row[disabled]{color:var(--muted);cursor:not-allowed}
+.row.cur{border:2px solid var(--brass);background:#1d2630;padding:11px 13px}
+.st-solved{color:var(--ok);font-weight:600}
+.st-open{color:var(--brass);font-weight:600}
+.card{flex:2 1 440px;align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:20px}
+.prompt{margin:0;font-size:20px;line-height:1.5;white-space:pre-line}
+form{display:flex;flex-direction:column;gap:8px}
+.btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:4px}
+#feedback{margin:0;min-height:1.5em}
+#feedback.good{color:var(--ok)}
+#feedback.bad{color:var(--bad)}
+#hintBox{margin:0;padding:12px 14px;background:var(--inset);border-radius:10px}
+#win{margin-bottom:24px;max-width:none;flex:none;align-self:stretch;border-color:var(--ok)}
+#engine{margin-top:24px}
+@media (max-width:640px){header,main{padding-left:20px;padding-right:20px}h1{font-size:34px}.card{padding:20px}}
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">EnigmaForge</span>
+  <span class="sub">Procedural escape room engine</span>
+</header>
+<main>
+  <p id="notice" role="alert" hidden></p>
+
+  <!-- Screen 1: new game -->
+  <section id="setup">
+    <h1>Build an escape room</h1>
+    <p class="lead">Pick a theme and difficulty. The same seed always rebuilds the same room.</p>
+    <div class="group"><span class="lbl">Theme</span><div class="grid" id="themes"></div></div>
+    <div class="group"><span class="lbl">Difficulty</span><div class="grid" id="diffs"></div></div>
+    <div class="group">
+      <label class="lbl" for="seed">Seed (optional)</label>
+      <input id="seed" type="text" inputmode="numeric" autocomplete="off" placeholder="Leave blank for a random room, or enter e.g. 777">
+    </div>
+    <button class="go" id="start" type="button">Generate and start</button>
+  </section>
+
+  <!-- Screen 2: in the room -->
+  <section id="game" hidden>
+    <div class="chips" style="justify-content:space-between;margin-bottom:24px">
+      <h2 id="roomName"></h2>
+      <span class="chips">
+        <span class="chip mono" id="chipSeed"></span><span class="chip" id="chipDiff"></span><span class="chip" id="chipHints"></span>
+        <button class="alt" id="newBtn" type="button">New game</button>
+      </span>
+    </div>
+
+    <section id="win" class="card" hidden>
+      <h2>You escaped!</h2>
+      <p class="prompt" id="winText"></p>
+      <div class="btns"><button class="go" id="again" type="button">Play again</button></div>
+    </section>
+
+    <div class="layout">
+      <section class="side">
+        <div class="side-head"><strong>Puzzles</strong><span class="sub" id="count"></span></div>
+        <div class="track"><div id="bar"></div></div>
+        <div id="list" style="display:flex;flex-direction:column;gap:10px"></div>
+      </section>
+
+      <section class="card" id="panel" hidden>
+        <div><span class="chip" id="pType"></span></div>
+        <h2 id="pTitle"></h2>
+        <p class="prompt" id="pPrompt"></p>
+        <form id="form">
+          <label class="sub" for="answer">Your answer</label>
+          <input id="answer" type="text" autocomplete="off">
+          <div class="btns">
+            <button class="go" id="submitBtn" type="submit">Submit answer</button>
+            <button class="alt" id="hintBtn" type="button">Show hint</button>
+          </div>
+        </form>
+        <p id="feedback" role="status"></p>
+        <p id="hintBox" hidden></p>
+      </section>
+    </div>
+    <p class="sub mono" id="engine"></p>
+  </section>
+</main>
+
+<script>
+const THEMES = [
+  {name: "The Haunted Library", sub: "Bookshelf, grandfather clock, brass lectern"},
+  {name: "The Abandoned Laboratory", sub: "Microscope, steel safe, centrifuge"},
+  {name: "The Pirate Ship", sub: "Barnacle chest, ship's wheel, powder barrel"}
+];
+const DIFFS = [
+  {name: "Easy", sub: "4 puzzles, 3-digit codes"},
+  {name: "Medium", sub: "5 puzzles, 4-digit codes"},
+  {name: "Hard", sub: "6 puzzles, 5-digit codes, more locked doors"}
+];
+
+let theme = 0, diff = 2;      // chosen on the setup screen (0-based)
+let room = null;              // latest state from /api/room
+let selected = null;          // id of the puzzle shown in the panel
+
+const $ = id => document.getElementById(id);
+
+// ---------- talking to the C++ server ----------
+async function api(path, options) {
+  let res;
+  try { res = await fetch(path, options); }
+  catch (e) { throw new Error("Cannot reach the game server. Is enigmaforge_web running?"); }
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
+function notice(msg) {
+  $("notice").textContent = msg || "";
+  $("notice").hidden = !msg;
+}
+
+function show(view) {
+  $("setup").hidden = view !== "setup";
+  $("game").hidden = view !== "game";
+}
+
+// ---------- setup screen ----------
+function buildChoices(boxId, items, current, onPick) {
+  const box = $(boxId);
+  box.textContent = "";
+  items.forEach((item, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "opt" + (i === current ? " on" : "");
+    b.setAttribute("aria-pressed", i === current ? "true" : "false");
+    const name = document.createElement("strong");
+    name.textContent = item.name;
+    const sub = document.createElement("span");
+    sub.className = "sub";
+    sub.textContent = item.sub;
+    b.append(name, sub);
+    b.addEventListener("click", () => onPick(i));
+    box.appendChild(b);
+  });
+}
+
+function drawSetup() {
+  buildChoices("themes", THEMES, theme, i => { theme = i; drawSetup(); });
+  buildChoices("diffs", DIFFS, diff, i => { diff = i; drawSetup(); });
+}
+
+async function startGame() {
+  notice("");
+  const seedText = $("seed").value.trim();
+  if (seedText && !/^\d{1,9}$/.test(seedText)) {
+    notice("The seed must be a whole number (up to 9 digits), or leave it blank.");
+    return;
+  }
+  let query = "theme=" + (theme + 1) + "&difficulty=" + (diff + 1);
+  if (seedText) query += "&seed=" + seedText;
+  try {
+    const data = await api("/api/new?" + query, {method: "POST"});
+    selected = null;
+    $("win").hidden = true;
+    $("panel").hidden = true;
+    show("game");
+    drawRoom(data);
+    const first = data.puzzles.find(p => p.status === "open");
+    if (first) await selectPuzzle(first.id);
+  } catch (e) { notice(e.message); }
+}
+
+// ---------- game screen ----------
+function drawRoom(data) {
+  room = data;
+  $("roomName").textContent = data.name;
+  $("chipSeed").textContent = "Seed " + data.seed;
+  $("chipDiff").textContent = data.difficulty;
+  $("chipHints").textContent = "Hints used: " + data.hintsUsed;
+
+  const solved = data.puzzles.filter(p => p.status === "solved").length;
+  $("count").textContent = solved + " of " + data.puzzles.length + " solved";
+  $("bar").style.width = (100 * solved / data.puzzles.length) + "%";
+  $("engine").textContent = (data.solvable ? "Engine check: solvable. Valid unlock order " : "Engine check: NOT solvable. Order ") +
+                            data.solveOrder.join(", ");
+
+  const list = $("list");
+  list.textContent = "";
+  data.puzzles.forEach(p => {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "row" + (p.id === selected ? " cur" : "");
+    row.disabled = p.status === "locked";
+
+    const left = document.createElement("span");
+    left.textContent = p.title;
+    left.appendChild(document.createElement("br"));
+    const type = document.createElement("span");
+    type.className = "sub";
+    type.textContent = p.type;
+    left.appendChild(type);
+
+    const right = document.createElement("span");
+    if (p.status === "solved") { right.className = "st-solved"; right.textContent = "Solved"; }
+    else if (p.status === "open") { right.className = "st-open"; right.textContent = "Open"; }
+    else { right.className = "sub"; right.textContent = "Locked, needs " + p.needs.join(", "); }
+
+    row.append(left, right);
+    row.addEventListener("click", () => selectPuzzle(p.id));
+    list.appendChild(row);
+  });
+}
+
+async function refreshRoom() { drawRoom(await api("/api/room")); }
+
+function setFeedback(msg, kind) {
+  const f = $("feedback");
+  f.textContent = msg || "";
+  f.className = kind || "";
+}
+
+async function selectPuzzle(id) {
+  notice("");
+  try {
+    const p = await api("/api/puzzle/" + id);
+    selected = id;
+    $("pType").textContent = p.type;
+    $("pTitle").textContent = p.title;
+    $("pPrompt").textContent = p.prompt;
+    $("answer").value = "";
+    $("hintBox").hidden = true;
+    const done = p.status === "solved";
+    $("answer").disabled = done;
+    $("submitBtn").disabled = done;
+    $("hintBtn").disabled = done;
+    setFeedback(done ? "Already solved." : "", done ? "good" : "");
+    $("panel").hidden = false;
+    drawRoom(room);
+    if (!done) $("answer").focus();
+  } catch (e) { notice(e.message); }
+}
+
+function showWin() {
+  $("winText").textContent = "You escaped " + room.name + ". Hints used: " + room.hintsUsed +
+                             ". Wrong answers: " + room.wrongAttempts + ".";
+  $("win").hidden = false;
+  $("panel").hidden = true;
+  $("win").scrollIntoView({behavior: "smooth"});
+}
+
+$("form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  if (selected === null) return;
+  const text = $("answer").value.trim();
+  if (!text) { setFeedback("Type an answer first.", "bad"); return; }
+  try {
+    const r = await api("/api/puzzle/" + selected + "/answer",
+                        {method: "POST", body: new URLSearchParams({answer: text})});
+    await refreshRoom();
+    if (!r.correct) { setFeedback("Wrong answer. Try again.", "bad"); return; }
+    if (r.escaped) { showWin(); return; }
+    const next = room.puzzles.find(p => p.status === "open");
+    if (next) {
+      await selectPuzzle(next.id);
+      setFeedback("Click! Correct. The next puzzle is open.", "good");
+    }
+  } catch (e) { notice(e.message); }
+});
+
+$("hintBtn").addEventListener("click", async () => {
+  if (selected === null) return;
+  try {
+    const h = await api("/api/puzzle/" + selected + "/hint");
+    $("hintBox").textContent = "Hint: " + h.hint;
+    $("hintBox").hidden = false;
+    await refreshRoom();
+  } catch (e) { notice(e.message); }
+});
+
+$("start").addEventListener("click", startGame);
+$("seed").addEventListener("keydown", ev => { if (ev.key === "Enter") startGame(); });
+$("newBtn").addEventListener("click", () => { notice(""); show("setup"); });
+$("again").addEventListener("click", () => { notice(""); show("setup"); });
+
+drawSetup();
+show("setup");
+</script>
+</body>
+</html>

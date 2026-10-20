@@ -1,0 +1,6 @@
+enigmaforge
+enigmaforge_web
+error
+*.o
+.DS_Store
+saves/
